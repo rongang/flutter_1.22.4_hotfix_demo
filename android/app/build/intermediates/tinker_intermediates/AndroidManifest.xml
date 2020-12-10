@@ -1,4 +1,4 @@
-<manifest package="com.example.hotfix" android:versionCode="1" xmlns:android="http://schemas.android.com/apk/res/android" android:versionName="1.0.0">
+<manifest package="com.example.hotfix" android:versionCode="1" xmlns:android="http://schemas.android.com/apk/res/android" android:versionName="1.0">
   <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="29"/>
   <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
   <uses-permission android:name="android.permission.INTERNET"/>
@@ -80,6 +80,6 @@
     <activity android:name="com.tencent.tinker.loader.hotplug.ActivityStubs$SIStub_01_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent"/>
     <activity android:name="com.tencent.tinker.loader.hotplug.ActivityStubs$SIStub_02_T" android:launchMode="singleInstance" android:theme="@android:style/Theme.Translucent"/>
     <meta-data android:name="tinker_version" android:value="1.9.14.6"/>
-    <meta-data android:name="TINKER_ID" android:value="tinker_id_1209-16-24-05"/>
+    <meta-data android:name="TINKER_ID" android:value="tinker_id_1210-11-36-27"/>
   </application>
 </manifest>

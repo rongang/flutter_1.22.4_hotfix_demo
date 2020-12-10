@@ -13,7 +13,9 @@ import com.tencent.tinker.loader.shareutil.SharePatchFileUtil;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.flutter.FlutterInjector;
 import io.flutter.embedding.engine.loader.FlutterApplicationInfo;
@@ -48,62 +50,25 @@ public class FlutterPatch {
     public static void reflect(String libPath) {
         TinkerLog.i(TAG, "flutter patch is loading...");
         try {
-//
-//            Field field = FlutterLoader.class.getDeclaredField("aotSharedLibraryName");
-//            field.setAccessible(true);
-//            field.set(flutterLoader, libPath);
-
             Field field = FlutterLoader.class.getDeclaredField("flutterApplicationInfo");
             field.setAccessible(true);
             FlutterApplicationInfo flutterApplicationInfo = (FlutterApplicationInfo) field.get(FlutterInjector.instance().flutterLoader());
             System.out.println(flutterApplicationInfo);
-//            Field aotSharedLibraryNameField = FlutterApplicationInfo.class.getDeclaredField("aotSharedLibraryName");
-//            aotSharedLibraryNameField.setAccessible(true);
-//            System.out.println(aotSharedLibraryNameField.get(flutterApplicationInfo));
-//            List<Object> ifs = new ArrayList<>();
-//            for (Field f : FlutterApplicationInfo.class.getDeclaredFields()) {
-//                f.setAccessible(true);
-//                System.out.println(TAG + f.get(flutterApplicationInfo));
-//                ifs.add(f.get(flutterApplicationInfo));
-//            }
-//            TinkerLog.i(TAG, ifs.toString());
-            Field aotSharedLibraryNameField = FlutterApplicationInfo.class.getDeclaredField("aotSharedLibraryName");
-            Field vmSnapshotDataField = FlutterApplicationInfo.class.getDeclaredField("vmSnapshotData");
-            Field isolateSnapshotDataField = FlutterApplicationInfo.class.getDeclaredField("isolateSnapshotData");
-            Field flutterAssetsDirField = FlutterApplicationInfo.class.getDeclaredField("flutterAssetsDir");
-            Field domainNetworkPolicyField = FlutterApplicationInfo.class.getDeclaredField("domainNetworkPolicy");
-            Field nativeLibraryDirField = FlutterApplicationInfo.class.getDeclaredField("nativeLibraryDir");
-            Field clearTextPermittedField = FlutterApplicationInfo.class.getDeclaredField("clearTextPermitted");
-            aotSharedLibraryNameField.setAccessible(true);
-            vmSnapshotDataField.setAccessible(true);
-            isolateSnapshotDataField.setAccessible(true);
-            flutterAssetsDirField.setAccessible(true);
-            domainNetworkPolicyField.setAccessible(true);
-            nativeLibraryDirField.setAccessible(true);
-            clearTextPermittedField.setAccessible(true);
-            String aotSharedLibraryName = (String) aotSharedLibraryNameField.get(flutterApplicationInfo);
-            String vmSnapshotData = (String) vmSnapshotDataField.get(flutterApplicationInfo);
-            String isolateSnapshotData = (String) isolateSnapshotDataField.get(flutterApplicationInfo);
-            String flutterAssetsDir = (String) flutterAssetsDirField.get(flutterApplicationInfo);
-            String domainNetworkPolicy = (String) domainNetworkPolicyField.get(flutterApplicationInfo);
-            String nativeLibraryDir = (String) nativeLibraryDirField.get(flutterApplicationInfo);
-            boolean clearTextPermitted = (boolean) clearTextPermittedField.get(flutterApplicationInfo);
-            System.out.println("aotSharedLibraryName："+aotSharedLibraryName);
-            System.out.println("vmSnapshotData："+vmSnapshotData);
-            System.out.println("isolateSnapshotData："+isolateSnapshotData);
-            System.out.println("flutterAssetsDir："+flutterAssetsDir);
-            System.out.println("domainNetworkPolicy："+domainNetworkPolicy);
-            System.out.println("nativeLibraryDir："+nativeLibraryDir);
-            System.out.println("clearTextPermitted："+clearTextPermitted);
+            Map<String, Object> infoMap = new HashMap<>();
+            for (Field f : FlutterApplicationInfo.class.getDeclaredFields()) {
+                f.setAccessible(true);
+                infoMap.put(f.getName(), f.get(flutterApplicationInfo));
+            }
+            TinkerLog.i(TAG, infoMap.toString());
             FlutterApplicationInfo flutterApplicationInfoCopy
                     = new FlutterApplicationInfo(
                     libPath,
-                    vmSnapshotData,
-                    isolateSnapshotData,
-                    flutterAssetsDir,
-                    domainNetworkPolicy,
-                    nativeLibraryDir,
-                    clearTextPermitted
+                    (String) infoMap.get("vmSnapshotData"),
+                    (String) infoMap.get("isolateSnapshotData"),
+                    (String) infoMap.get("flutterAssetsDir"),
+                    (String) infoMap.get("domainNetworkPolicy"),
+                    (String) infoMap.get("nativeLibraryDir"),
+                    (boolean) infoMap.get("clearTextPermitted")
             );
             field.set(FlutterInjector.instance().flutterLoader(), flutterApplicationInfoCopy);
 
@@ -140,7 +105,7 @@ public class FlutterPatch {
             if (isUseTinker) {
                 TinkerLog.i(STAG, "执行hook-----isUseTinker");
                 String libPathFromTinker = getLibPath(context);
-                if(libPathFromTinker==null)
+                if (libPathFromTinker == null)
                     TinkerLog.i(STAG, "Tinker path is null");
                 else
                     TinkerLog.i(STAG, libPathFromTinker);
@@ -242,24 +207,33 @@ public class FlutterPatch {
     }
 
     /**
-     * 获取最优abi
+     * 修改真机Abi为armeabi-v7a 减小包体积
      *
      * @return
      */
     public static String getCpuABI() {
-
         if (Build.VERSION.SDK_INT >= 21) {
             for (String cpu : Build.SUPPORTED_ABIS) {
                 if (!TextUtils.isEmpty(cpu)) {
                     TinkerLog.i(TAG, "cpu abi is:" + cpu);
-                    return cpu;
+                    return handleCpuAbi(cpu);
                 }
             }
         } else {
             TinkerLog.i(TAG, "cpu abi is:" + Build.CPU_ABI);
-            return Build.CPU_ABI;
+            return handleCpuAbi(Build.CPU_ABI);
         }
 
         return "";
+    }
+
+    public static String handleCpuAbi(String abi) {
+
+        if (abi.contains("86"))
+            abi = "x86";
+        else
+            abi = "armeabi-v7a";
+        TinkerLog.i(TAG, "执行cpuABI为:" + abi);
+        return abi;
     }
 }
